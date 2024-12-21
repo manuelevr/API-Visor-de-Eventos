@@ -23,10 +23,11 @@ const loginController = async (req: Request, res: Response) => {
 
         // Consultar la base de datos para verificar las credenciales
         const result = await pool
-            .request()
-            .input('username', username)
-            .query('SELECT * FROM [user] WHERE [User] = @username');
-
+        .request()
+        .input('username', username)
+        .query('SELECT * FROM [user] WHERE [User] = @username');
+        
+        console.log("🚀 ~ loginController ~ result:", result)
         // Verificar si se encontraron resultados
         if (result.recordset.length === 0) {
             return res.status(401).json({ message: "Nombre de usuario o contraseña incorrectos" });
@@ -43,9 +44,10 @@ const loginController = async (req: Request, res: Response) => {
 
         // Si las credenciales son válidas, generar un token JWT
         const token = jwt.sign({ id: usuario.UserID, username: usuario.User }, process.env.JWT_SECRET || '', { expiresIn: '24h' });
+        console.log("🚀 ~ loginController ~ token:", token)
 
         // Devolver el token JWT como respuesta
-        return res.status(200).json({ token });
+        return res.status(200).json({ token,CustomerId:usuario.CustomerId });
 
     } catch (error: any) {
         console.error('Error en el controlador de inicio de sesión:', error);
