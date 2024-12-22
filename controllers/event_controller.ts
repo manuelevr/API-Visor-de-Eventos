@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { connectDB } from '../Database/database';
 import { NeedResetById, updateLocalNeedResetById } from './hot_local_contoller';
-
+import LogedUsers from './auth_controller'
 
 export const addEvent = async (req: Request, res: Response) => {
     
@@ -53,11 +53,30 @@ export const addEvent = async (req: Request, res: Response) => {
 
 
 export const getEvents = async (_req: Request, res: Response) => {
+    const token = _req.headers.authorization?.split(' ')[1]||'';
+    const Costumer = LogedUsers.LogedUsers[token].CostumerId;
+    console.log("🚀 ~ getHotLocalStores ~ Costumer:", Costumer)
+   
+    
     try {
         const pool = await connectDB();
 
         // Obtener todas las incidencias de la base de datos
-        const result = await pool.request().query('SELECT * FROM event');
+        const result = await pool.request().input('Costumer', Costumer).query(`SELECT  
+   e.*,
+   b.CustomerId
+
+FROM 
+    [statisticsST].[dbo].[event] e
+JOIN 
+    [statisticsST].[dbo].[stores] s
+    ON e.[StoreId] = s.[Id]
+	JOIN 
+    [statisticsST].[dbo].[brands] b
+    ON b.[Id] = s.[BrandId]
+   WHERE 
+                    b.CustomerId = @Costumer
+    `);
 
         res.json(result.recordset);
     } catch (error: any) {
@@ -68,6 +87,10 @@ export const getEvents = async (_req: Request, res: Response) => {
 
 // Función para obtener una incidencia por su ID
 export const getEventsById = async (req: Request, res: Response) => {
+    const token = req.headers.authorization?.split(' ')[1]||'';
+    const Costumer = LogedUsers.LogedUsers[token].CostumerId;
+    console.log("🚀 ~ getHotLocalStores ~ Costumer:", Costumer)
+   
     try {
         const pool = await connectDB();
         const { id } = req.params; // El StoreId que viene en los parámetros de la URL
@@ -75,11 +98,17 @@ export const getEventsById = async (req: Request, res: Response) => {
         // Ejecutar la consulta para obtener los eventos relacionados con el StoreId
         const result = await pool.request()
             .input('id', id)
+            .input('Costumer', Costumer)
             .query(`
-                SELECT e.*FROM [statisticsST].[dbo].[event] e
-                INNER JOIN [statisticsST].[dbo].[stores] s
-                    ON e.[StoreId] = s.[Id]
-                WHERE s.[StoreId] = @id
+                SELECT e.*, b.CustomerId FROM 
+                [statisticsST].[dbo].[event] e
+                JOIN 
+                [statisticsST].[dbo].[stores] s
+                ON e.[StoreId] = s.[Id]
+	            JOIN 
+                [statisticsST].[dbo].[brands] b
+                ON b.[Id] = s.[BrandId]
+                WHERE s.[StoreId] = @id and b.CustomerId = @Costumer
             `);
 
         // Si no se encontraron eventos, devolver un error 404

@@ -1,48 +1,58 @@
 import { Request, Response } from 'express';
 import { connectDB } from '../Database/database';
 import {LocalStores,updateLocalNeedResetById,updateTiendas,updateByBrandId} from './hot_local_contoller';
-//import initializeTiendas from './hot_local_contoller';
+//import { User } from '../interfaces/User';
+import LogedUsers from './auth_controller'
+//import { LogedUsersType } from '../interfaces/LogedUsersType';
 
 
 
 
 export const getHotLocalStores = async (_req: Request, res: Response) => {
+    const token = _req.headers.authorization?.split(' ')[1]||'';
+    const Costumer = LogedUsers.LogedUsers[token].CostumerId;
+    console.log("🚀 ~ getHotLocalStores ~ Costumer:", Costumer)
+   
+    
     await updateTiendas(); // Aseguramos que las tiendas estén inicializadas
     
-    //console.log("🚀 ~ LocalStores:", LocalStores);
-
+    
+    
     try {
         // Mapeamos los datos de 'LocalStores' a un nuevo array con los campos requeridos
+        
+        //onsole.log("🚀 ~ getHotLocalStores ~ LocalStores:", LocalStores)
         const locales = Object.values(LocalStores)
-            .filter(local => local.isActive) // Filtramos locales activos
-            .map((local) => ({
-                local_id: local.Id,
-                numero_del_local: local.StoreId,
-                local_nombre: local.Name,
-                marcas: local.BrandId,  
-                needReset: local.needReset, // Incluyendo el campo needReset
-                lastRestart: local.lastRestart || null // Asignando un valor por defecto si está undefined
-            }));
-
-        // Respondemos con el array de locales activos
-        //console.log("🚀 ~ getHotLocalStores ~ locales:", locales);
+        .filter(local => local.isActive && local.CostumerId === Costumer) // Filtramos locales activos
+        .map((local) => ({
+            local_id: local.Id,
+            numero_del_local: local.StoreId,
+            local_nombre: local.Name,
+            costumer: local.CostumerId,
+            marcas: local.BrandId,  
+            needReset: local.needReset, // Incluyendo el campo needReset
+            lastRestart: local.lastRestart || null // Asignando un valor por defecto si está undefined
+        }));
+        
+       
         res.json(locales);
     } catch (error: any) {
         console.error("Error al obtener tiendas desde memoria:", error);
         res.status(500).send(error.message);
     }
+        console.log("🚀 ~ getHotLocalStores ~ LocalStores:", LocalStores)
 };
 export const getHotLocalStoresByMarca = async (req: Request, res: Response) => {
     const { marcaId } = req.params; // Obtenemos el ID de la marca desde los parámetros de la URL
 
     await updateTiendas(); // Aseguramos que las tiendas estén inicializadas
     
-    //console.log("🚀 ~ LocalStores:", LocalStores);
-
+    
+    
     try {
         // Filtramos los locales por la marca específica
         const locales = Object.values(LocalStores)
-            .filter((local) => local.BrandId === marcaId) // Filtramos por ID de marca
+        .filter((local) => local.BrandId === marcaId) // Filtramos por ID de marca
             .map((local) => ({
                 local_id: local.Id,
                 numero_del_local: local.StoreId,
@@ -53,7 +63,7 @@ export const getHotLocalStoresByMarca = async (req: Request, res: Response) => {
             }));
 
         // Respondemos con el array de locales filtrados
-       // console.log("🚀 ~ getHotLocalStoresByMarca ~ locales:", locales);
+      
         res.json(locales);
     } catch (error: any) {
         console.error("Error al obtener tiendas desde memoria:", error);
@@ -79,7 +89,7 @@ export const getNeedResetById = async (req: Request, res: Response) => {
 };
 export const updateNeedResetById = async (req: Request, res: Response) => {
     const { id, needReset } = req.body; // Obtiene el ID y el nuevo valor de needReset del cuerpo de la solicitud
-
+    
     try {
         const updatedLocal = updateLocalNeedResetById(id, needReset); // Llama a la función externa
         res.json({ message: "Local actualizado", local: updatedLocal });
@@ -111,17 +121,20 @@ export const getLocales = async (_req: Request, res: Response) => {
     } 
 };
 export const getFullLocales = async (_req: Request, res: Response) => {
-    //console.log("🚀 ~ tiendasLength:", LocalStores.length)
+    const token = _req.headers.authorization?.split(' ')[1]||'';
+    const Costumer = LogedUsers.LogedUsers[token].CostumerId;
    
+    
     try {
         const pool = await connectDB();
-        const result = await pool.request().query(`
-           SELECT 
-    s.Id AS local_id,               -- Id del local (stores.Id)
+        const result = await pool.request().input('Costumer', Costumer).query(`
+            SELECT 
+            s.Id AS local_id,               -- Id del local (stores.Id)
     s.StoreId AS numero_del_local,  -- Número del local (stores.StoreId)
     s.Name AS local_nombre,          -- Nombre del local (stores.Name)
     b.Name AS marcas,             -- Marca del local (brands.Name)
-	ss.Estado AS Operativa 
+	b.CustomerId,
+    ss.Estado AS Operativa 
    
 
 FROM 
@@ -130,7 +143,8 @@ INNER JOIN
     [statisticsST].[dbo].[brands] b ON s.BrandId = b.Id
 INNER JOIN 
     [statisticsST].[dbo].[StoreStatus] ss ON ss.StoreId = s.Id -- Unir con StoreStatus
-
+ WHERE 
+                    b.CustomerId = @Costumer
 
 
 ORDER BY 
@@ -145,11 +159,13 @@ ORDER BY
 } 
 };
 export const getLocalesOpretivos = async (_req: Request, res: Response) => {
-    //console.log("🚀 ~ tiendasLength:", LocalStores.length)
+    const token = _req.headers.authorization?.split(' ')[1]||'';
+    const Costumer = LogedUsers.LogedUsers[token].CostumerId;
+   
    
     try {
         const pool = await connectDB();
-        const result = await pool.request().query(`
+        const result = await pool.request().input('Costumer', Costumer).query(`
            SELECT 
     s.Id AS local_id,               -- Id del local (stores.Id)
     s.StoreId AS numero_del_local,  -- Número del local (stores.StoreId)
@@ -197,6 +213,7 @@ INNER JOIN
 
 WHERE 
     ss.Estado = 1  -- Filtrar por aquellos que tienen Estado = 1 (operativa)
+    AND  b.CustomerId = @Costumer
 
 ORDER BY 
     s.StoreId ASC;
@@ -287,8 +304,7 @@ export const setOperativa = async (req: Request, res: Response) => {
     try {
         const pool = await connectDB();
         const { id, Operativo } = req.body;
-        //console.log("🚀 ~ setOperativa ~ Operativo:", Operativo)
-        //console.log("🚀 ~ setOperativa ~ id:", id)
+       
        
 
         // Realizamos el UPDATE a la tabla StoreStatus
@@ -310,7 +326,7 @@ export const setOperativa = async (req: Request, res: Response) => {
         return res.json({ message: 'Store status updated successfully', result });
     } catch (error: any) {
         // Manejo de errores
-        //console.log("🚀 ~ setOperativa ~ error.message:", error.message)
+      
         return res.status(500).json({ message: error.message });
     }
 };

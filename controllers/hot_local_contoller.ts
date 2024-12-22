@@ -6,7 +6,7 @@ interface Store {
     Name: string;
     StoreId: string;
     BrandId: string;
-    LocalGroupId: string;
+    CostumerId: string;
     needReset: boolean;
     isActive: boolean;
     lastRestart: Date;
@@ -23,6 +23,7 @@ const fetchLocales = async (): Promise<{ [key: string]: Store }> => {
             s.[StoreId], 
             e.[event_date], 
             s.BrandId, 
+			b.CustomerId,
             ss.Estado AS isActive
         FROM 
             [statisticsST].[dbo].[stores] s
@@ -30,6 +31,8 @@ const fetchLocales = async (): Promise<{ [key: string]: Store }> => {
             [statisticsST].[dbo].[event] e ON s.[Id] = e.[StoreId] AND e.[event_subtype] = 'Service Restart' AND e.[event_type] ='Notification'
         LEFT JOIN 
             [statisticsST].[dbo].[StoreStatus] ss ON ss.StoreId = s.Id
+			LEFT JOIN 
+            [statisticsST].[dbo].[brands]b ON b.Id = s.BrandId
         ORDER BY 
             s.[StoreId]
     `);
@@ -41,13 +44,15 @@ const fetchLocales = async (): Promise<{ [key: string]: Store }> => {
             Name: item.Name,
             StoreId: item.StoreId,
             BrandId: item.BrandId,
-            LocalGroupId: item.LocalGroupId, // Asegúrate de que esta columna esté en tu consulta si es necesaria
+            CostumerId: item.CustomerId, // Asegúrate de que esta columna esté en tu consulta si es necesaria
             needReset: false,
             isActive: item.isActive, // Mapeo de isActive desde ss.Estado
             lastRestart: new Date(item.event_date) 
         };
     });
     
+    console.log("🚀 ~ fetchLocales ~ localesDict:", localesDict)
+   // console.log("🚀 ~ fetchLocales ~ localesDict:", localesDict)
     return localesDict;
 };
 

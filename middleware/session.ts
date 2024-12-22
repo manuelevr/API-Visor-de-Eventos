@@ -19,7 +19,8 @@ const verifyTokenMiddleware = (req: CustomRequest, res: Response, next: NextFunc
 
     try {
         // Verificar y decodificar el token JWT
-        const decodedToken = jwt.verify(token, process.env.JWT_SECRET || 'a');
+        const decodedToken = jwt.verify(token, process.env.JWT_SECRET || '');
+//console.log("🚀 ~ verifyTokenMiddleware ~ decodedToken:", decodedToken)
 
         // Agregar el token decodificado a la solicitud para que esté disponible en rutas posteriores si es necesario
         req.decodedToken = decodedToken;

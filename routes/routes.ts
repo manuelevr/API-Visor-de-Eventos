@@ -38,7 +38,8 @@ router.post("/event/", eventController.addEvent);
 //rutas de autenticacion
 router.post("/login/", authController.loginController);
 router.post("/logincheck/", authController.verifyToken);
-//router.post("/register/", authController.registerController);
+router.post("/register/", authController.createUserController);
+
 
 export default router;
 
