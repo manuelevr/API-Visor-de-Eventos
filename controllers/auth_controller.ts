@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt';
 import { Request, Response } from 'express';
 import { connectDB } from '../Database/database';
 import { User } from '../interfaces/User';
-import { LogedUsersType } from '../interfaces/LogedUsersType';
+import { LogedUsersType } from '../interfaces/LogedUsers';
 
 interface CustomRequest extends Request {
     decodedToken?: any; // Agregar la propiedad decodedToken opcional al objeto Request

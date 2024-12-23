@@ -7,6 +7,7 @@ interface Store {
     StoreId: string;
     BrandId: string;
     CostumerId: string;
+    BrandName: string;
     needReset: boolean;
     isActive: boolean;
     lastRestart: Date;
@@ -24,6 +25,7 @@ const fetchLocales = async (): Promise<{ [key: string]: Store }> => {
             e.[event_date], 
             s.BrandId, 
 			b.CustomerId,
+			b.Name as brandName,
             ss.Estado AS isActive
         FROM 
             [statisticsST].[dbo].[stores] s
@@ -44,15 +46,16 @@ const fetchLocales = async (): Promise<{ [key: string]: Store }> => {
             Name: item.Name,
             StoreId: item.StoreId,
             BrandId: item.BrandId,
-            CostumerId: item.CustomerId, // Asegúrate de que esta columna esté en tu consulta si es necesaria
+            CostumerId: item.CustomerId, 
+            BrandName: item.brandName, 
             needReset: false,
             isActive: item.isActive, // Mapeo de isActive desde ss.Estado
             lastRestart: new Date(item.event_date) 
         };
     });
     
-    console.log("🚀 ~ fetchLocales ~ localesDict:", localesDict)
-   // console.log("🚀 ~ fetchLocales ~ localesDict:", localesDict)
+   
+    //console.log("🚀 ~ fetchLocales ~ localesDict:", localesDict)
     return localesDict;
 };
 
@@ -60,6 +63,7 @@ const fetchLocales = async (): Promise<{ [key: string]: Store }> => {
     if (Object.keys(LocalStores).length === 0) {
         try {
             LocalStores = await fetchLocales();
+            console.log("🚀 ~ initializeTiendas ~ LocalStores:", LocalStores)
         } catch (error) {
             console.error("Error al inicializar locales:", error);
         }

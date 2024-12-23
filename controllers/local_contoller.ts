@@ -21,7 +21,7 @@ export const getHotLocalStores = async (_req: Request, res: Response) => {
     try {
         // Mapeamos los datos de 'LocalStores' a un nuevo array con los campos requeridos
         
-        //onsole.log("🚀 ~ getHotLocalStores ~ LocalStores:", LocalStores)
+       console.log("🚀 ----------~ getHotLocalStores ~ LocalStores:", LocalStores)
         const locales = Object.values(LocalStores)
         .filter(local => local.isActive && local.CostumerId === Costumer) // Filtramos locales activos
         .map((local) => ({
@@ -29,12 +29,13 @@ export const getHotLocalStores = async (_req: Request, res: Response) => {
             numero_del_local: local.StoreId,
             local_nombre: local.Name,
             costumer: local.CostumerId,
-            marcas: local.BrandId,  
+            marcas: local.BrandName,  
             needReset: local.needReset, // Incluyendo el campo needReset
             lastRestart: local.lastRestart || null // Asignando un valor por defecto si está undefined
         }));
         
-       
+        
+        console.log("🚀 ~ getHotLocalStores ~ locales:", locales)
         res.json(locales);
     } catch (error: any) {
         console.error("Error al obtener tiendas desde memoria:", error);
